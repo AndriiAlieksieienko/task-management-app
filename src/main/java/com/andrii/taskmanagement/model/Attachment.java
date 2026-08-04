@@ -1,4 +1,4 @@
-package com.andrii.task_management_app.model;
+package com.andrii.taskmanagement.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -9,16 +9,15 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @Setter
-@Table(name = "comments")
-public class Comment {
+@Table(name = "attachments")
+public class Attachment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -28,12 +27,15 @@ public class Comment {
     private Task task;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "uploaded_by", nullable = false)
+    private User uploadedBy;
+
+    @Column(name = "dropbox_file_id", nullable = false)
+    private String dropboxFileId;
 
     @Column(nullable = false)
-    private String text;
+    private String filename;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "upload_date", nullable = false)
+    private LocalDateTime uploadDate;
 }

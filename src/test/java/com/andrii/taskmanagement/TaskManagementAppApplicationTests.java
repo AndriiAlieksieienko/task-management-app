@@ -1,4 +1,4 @@
-package com.andrii.task_management_app;
+package com.andrii.taskmanagement;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

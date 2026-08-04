@@ -1,12 +1,11 @@
-package com.andrii.task_management_app.model;
+package com.andrii.taskmanagement.model;
 
 import jakarta.persistence.Embeddable;
+import java.io.Serializable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.io.Serializable;
 
 @Embeddable
 @Getter

@@ -1,4 +1,4 @@
-package com.andrii.task_management_app.model;
+package com.andrii.taskmanagement.model;
 
 public enum ProjectStatus {
     INITIATED,

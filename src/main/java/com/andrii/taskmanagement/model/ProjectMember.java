@@ -1,4 +1,4 @@
-package com.andrii.task_management_app.model;
+package com.andrii.taskmanagement.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EmbeddedId;
@@ -8,10 +8,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
