@@ -1,0 +1,71 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-projects-table
+      author: freeman
+      changes:
+        - createTable:
+            tableName: projects
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+
+              - column:
+                  name: name
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: description
+                  type: varchar(255)
+
+              - column:
+                  name: status
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: start_date
+                  type: date
+
+              - column:
+                  name: end_date
+                  type: date
+
+              - column:
+                  name: owner_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: created_at
+                  type: datetime
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: updated_at
+                  type: datetime
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: is_deleted
+                  type: bit(1)
+                  defaultValueBoolean: 0
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: projects
+            baseColumnNames: owner_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_projects_owner

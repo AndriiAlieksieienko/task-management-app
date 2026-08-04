@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-task-labels-table
+      author: freeman
+      changes:
+        - createTable:
+            tableName: task_labels
+            columns:
+              - column:
+                  name: task_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: label_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+
+        - addPrimaryKey:
+            tableName: task_labels
+            columnNames: task_id, label_id
+            constraintName: pk_task_labels
+
+        - addForeignKeyConstraint:
+            baseTableName: task_labels
+            baseColumnNames: task_id
+            referencedTableName: tasks
+            referencedColumnNames: id
+            constraintName: fk_task_labels_task
+
+        - addForeignKeyConstraint:
+            baseTableName: task_labels
+            baseColumnNames: label_id
+            referencedTableName: labels
+            referencedColumnNames: id
+            constraintName: fk_task_labels_label
