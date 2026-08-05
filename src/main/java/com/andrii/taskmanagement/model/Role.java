@@ -20,7 +20,7 @@ public class Role {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 30)
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, unique = true, length = 30)
     private RoleName name;
 }
