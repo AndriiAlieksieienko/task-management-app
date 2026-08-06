@@ -6,13 +6,12 @@ import com.andrii.taskmanagement.model.RoleName;
 import com.andrii.taskmanagement.model.User;
 import com.andrii.taskmanagement.repository.user.RoleRepository;
 import com.andrii.taskmanagement.repository.user.UserRepository;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
