@@ -10,10 +10,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @Entity
 @Getter
@@ -21,7 +25,7 @@ import org.hibernate.annotations.SQLRestriction;
 @Table(name = "users")
 @SQLDelete(sql = "UPDATE users SET is_deleted = true WHERE id = ?")
 @SQLRestriction("is_deleted = false")
-public class User {
+public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -53,4 +57,9 @@ public class User {
 
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(role);
+    }
 }
