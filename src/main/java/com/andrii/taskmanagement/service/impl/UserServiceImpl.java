@@ -2,6 +2,7 @@ package com.andrii.taskmanagement.service.impl;
 
 import com.andrii.taskmanagement.dto.user.UserRegistrationRequestDto;
 import com.andrii.taskmanagement.dto.user.UserResponseDto;
+import com.andrii.taskmanagement.dto.user.UserRoleUpdateRequestDto;
 import com.andrii.taskmanagement.dto.user.UserUpdateRequestDto;
 import com.andrii.taskmanagement.exception.DuplicateEmailException;
 import com.andrii.taskmanagement.exception.EntityNotFoundException;
@@ -59,12 +60,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponseDto getCurrentUser(String email) {
-        return userMapper.toUserResponse(getUserByEmail(email));
+        return userMapper.toUserResponse(findUserByEmail(email));
     }
 
     @Override
     public UserResponseDto updateUser(String email, UserUpdateRequestDto requestDto) {
-        User user = getUserByEmail(email);
+        User user = findUserByEmail(email);
 
         if (!user.getEmail().equals(requestDto.email())
                 && userRepository.existsByEmail(requestDto.email())) {
@@ -80,10 +81,34 @@ public class UserServiceImpl implements UserService {
         return userMapper.toUserResponse(updatedUser);
     }
 
-    private User getUserByEmail(String email) {
+    @Override
+    public UserResponseDto updateUserRole(Long id, UserRoleUpdateRequestDto requestDto) {
+        User user = findUserById(id);
+        Role role = roleRepository.findByName(requestDto.role())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Role not found by name: " + requestDto.role()));
+
+        if (user.getRole().equals(role)) {
+            return userMapper.toUserResponse(user);
+        }
+
+        user.setRole(role);
+        user.setUpdatedAt(LocalDateTime.now());
+        User updatedUser = userRepository.save(user);
+
+        return userMapper.toUserResponse(updatedUser);
+    }
+
+    private User findUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "User not found by email: " + email)
                 );
+    }
+
+    private User findUserById(Long id) {
+        return userRepository.findById(id).orElseThrow(
+                () -> new EntityNotFoundException("Can't find the user by id: " + id)
+        );
     }
 }
