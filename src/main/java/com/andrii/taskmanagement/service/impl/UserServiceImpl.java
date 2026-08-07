@@ -2,6 +2,8 @@ package com.andrii.taskmanagement.service.impl;
 
 import com.andrii.taskmanagement.dto.user.UserRegistrationRequestDto;
 import com.andrii.taskmanagement.dto.user.UserResponseDto;
+import com.andrii.taskmanagement.dto.user.UserUpdateRequestDto;
+import com.andrii.taskmanagement.exception.DuplicateEmailException;
 import com.andrii.taskmanagement.exception.EntityNotFoundException;
 import com.andrii.taskmanagement.exception.RegistrationException;
 import com.andrii.taskmanagement.mapper.UserMapper;
@@ -53,5 +55,35 @@ public class UserServiceImpl implements UserService {
 
         User savedUser = userRepository.save(user);
         return userMapper.toUserResponse(savedUser);
+    }
+
+    @Override
+    public UserResponseDto getCurrentUser(String email) {
+        return userMapper.toUserResponse(getUserByEmail(email));
+    }
+
+    @Override
+    public UserResponseDto updateUser(String email, UserUpdateRequestDto requestDto) {
+        User user = getUserByEmail(email);
+
+        if (!user.getEmail().equals(requestDto.email())
+                && userRepository.existsByEmail(requestDto.email())) {
+            throw new DuplicateEmailException(
+                    "Can't register user. Email already exists: " + requestDto.email()
+            );
+        }
+
+        userMapper.updateUserFromDto(requestDto, user);
+        user.setUpdatedAt(LocalDateTime.now());
+
+        User updatedUser = userRepository.save(user);
+        return userMapper.toUserResponse(updatedUser);
+    }
+
+    private User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "User not found by email: " + email)
+                );
     }
 }
