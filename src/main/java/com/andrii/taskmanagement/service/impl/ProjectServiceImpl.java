@@ -3,6 +3,7 @@ package com.andrii.taskmanagement.service.impl;
 import com.andrii.taskmanagement.dto.project.ProjectCreateRequestDto;
 import com.andrii.taskmanagement.dto.project.ProjectManagerUpdateRequestDto;
 import com.andrii.taskmanagement.dto.project.ProjectResponseDto;
+import com.andrii.taskmanagement.dto.project.ProjectSearchParameters;
 import com.andrii.taskmanagement.dto.project.ProjectUpdateRequestDto;
 import com.andrii.taskmanagement.exception.EntityNotFoundException;
 import com.andrii.taskmanagement.mapper.ProjectMapper;
@@ -14,10 +15,13 @@ import com.andrii.taskmanagement.repository.project.ProjectMemberRepository;
 import com.andrii.taskmanagement.repository.project.ProjectRepository;
 import com.andrii.taskmanagement.repository.user.UserRepository;
 import com.andrii.taskmanagement.service.ProjectService;
+import com.andrii.taskmanagement.specification.ProjectSpecificationBuilder;
+import com.andrii.taskmanagement.specification.ProjectSpecifications;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +34,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectMapper projectMapper;
+    private final ProjectSpecificationBuilder projectSpecificationBuilder;
 
     @Override
     public ProjectResponseDto save(
@@ -66,29 +71,28 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional(readOnly = true)
     public Page<ProjectResponseDto> findAll(
+            ProjectSearchParameters searchParameters,
             Pageable pageable,
             String email
     ) {
         User user = findUserByEmail(email);
 
-        Page<Project> projects;
-        if (isAdmin(user)) {
-            projects = projectRepository.findAll(pageable);
+        Specification<Project> specification =
+                projectSpecificationBuilder.build(searchParameters);
 
-        } else if (isProjectManager(user)) {
-            projects = projectRepository.findByProjectManagerId(
-                    user.getId(),
-                    pageable
+        if (isProjectManager(user)) {
+            specification = specification.and(
+                    ProjectSpecifications.hasProjectManager(user.getId())
             );
-
-        } else {
-            projects = projectRepository.findProjectsByMemberId(
-                    user.getId(),
-                    pageable
+        } else if (isTeamMember(user)) {
+            specification = specification.and(
+                    ProjectSpecifications.hasMember(user.getId())
             );
         }
 
-        return projects.map(projectMapper::toProjectResponse);
+        return projectRepository
+                .findAll(specification, pageable)
+                .map(projectMapper::toProjectResponse);
     }
 
     @Override
@@ -189,10 +193,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         if (isTeamMember(user)) {
             boolean member = projectMemberRepository
-                    .existsByProjectIdAndUserId(
-                            project.getId(),
-                            user.getId()
-                    );
+                    .existsByProjectIdAndUserId(project.getId(), user.getId());
 
             if (member) {
                 return;

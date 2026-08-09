@@ -3,6 +3,7 @@ package com.andrii.taskmanagement.controller;
 import com.andrii.taskmanagement.dto.project.ProjectCreateRequestDto;
 import com.andrii.taskmanagement.dto.project.ProjectManagerUpdateRequestDto;
 import com.andrii.taskmanagement.dto.project.ProjectResponseDto;
+import com.andrii.taskmanagement.dto.project.ProjectSearchParameters;
 import com.andrii.taskmanagement.dto.project.ProjectUpdateRequestDto;
 import com.andrii.taskmanagement.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -46,10 +47,11 @@ public class ProjectController {
     @Operation(summary = "Get projects")
     @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER', 'TEAM_MEMBER')")
     public Page<ProjectResponseDto> getAll(
+            ProjectSearchParameters searchParameters,
             Pageable pageable,
             Authentication authentication
     ) {
-        return projectService.findAll(pageable, authentication.getName());
+        return projectService.findAll(searchParameters, pageable, authentication.getName());
     }
 
     @GetMapping("/{id}")
