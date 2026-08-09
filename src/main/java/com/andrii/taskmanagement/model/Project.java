@@ -45,8 +45,12 @@ public class Project {
     private LocalDate endDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id", nullable = false)
-    private User owner;
+    @JoinColumn(name = "created_by_id", nullable = false)
+    private User createdBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_manager_id", nullable = false)
+    private User projectManager;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

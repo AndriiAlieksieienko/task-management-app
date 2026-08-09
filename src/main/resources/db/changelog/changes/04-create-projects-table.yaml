@@ -1,11 +1,14 @@
 databaseChangeLog:
+
   - changeSet:
       id: create-projects-table
       author: freeman
       changes:
+
         - createTable:
             tableName: projects
             columns:
+
               - column:
                   name: id
                   type: bigint
@@ -39,7 +42,13 @@ databaseChangeLog:
                   type: date
 
               - column:
-                  name: owner_id
+                  name: created_by_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+
+              - column:
+                  name: project_manager_id
                   type: bigint
                   constraints:
                     nullable: false
@@ -65,7 +74,14 @@ databaseChangeLog:
 
         - addForeignKeyConstraint:
             baseTableName: projects
-            baseColumnNames: owner_id
+            baseColumnNames: created_by_id
             referencedTableName: users
             referencedColumnNames: id
-            constraintName: fk_projects_owner
+            constraintName: fk_projects_created_by
+
+        - addForeignKeyConstraint:
+            baseTableName: projects
+            baseColumnNames: project_manager_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_projects_project_manager
