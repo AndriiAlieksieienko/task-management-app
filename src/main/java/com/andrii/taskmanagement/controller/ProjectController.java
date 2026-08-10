@@ -2,9 +2,12 @@ package com.andrii.taskmanagement.controller;
 
 import com.andrii.taskmanagement.dto.project.ProjectCreateRequestDto;
 import com.andrii.taskmanagement.dto.project.ProjectManagerUpdateRequestDto;
+import com.andrii.taskmanagement.dto.project.ProjectMemberCreateRequestDto;
+import com.andrii.taskmanagement.dto.project.ProjectMemberResponseDto;
 import com.andrii.taskmanagement.dto.project.ProjectResponseDto;
 import com.andrii.taskmanagement.dto.project.ProjectSearchParameters;
 import com.andrii.taskmanagement.dto.project.ProjectUpdateRequestDto;
+import com.andrii.taskmanagement.service.ProjectMemberService;
 import com.andrii.taskmanagement.service.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ProjectController {
     private final ProjectService projectService;
+    private final ProjectMemberService projectMemberService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -93,9 +97,29 @@ public class ProjectController {
             @PathVariable Long id,
             @RequestBody @Valid ProjectManagerUpdateRequestDto requestDto
     ) {
-        return projectService.updateProjectManager(
-                id,
-                requestDto
-        );
+        return projectService.updateProjectManager(id, requestDto);
+    }
+
+    @PostMapping("/{projectId}/members")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER')")
+    @Operation(summary = "Add a team member to the project")
+    public ProjectMemberResponseDto addMember(
+            @PathVariable Long projectId,
+            @RequestBody @Valid ProjectMemberCreateRequestDto requestDto,
+            Authentication authentication
+    ) {
+        return projectMemberService.addMember(projectId, requestDto, authentication.getName());
+    }
+
+    @DeleteMapping("/{projectId}/members/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROJECT_MANAGER')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Remove a team member from the project")
+    public void removeMember(
+            @PathVariable Long projectId,
+            @PathVariable Long userId,
+            Authentication authentication
+    ) {
+        projectMemberService.removeMember(projectId, userId, authentication.getName());
     }
 }

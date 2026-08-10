@@ -2,27 +2,32 @@ package com.andrii.taskmanagement.service.impl;
 
 import com.andrii.taskmanagement.dto.project.ProjectCreateRequestDto;
 import com.andrii.taskmanagement.dto.project.ProjectManagerUpdateRequestDto;
+import com.andrii.taskmanagement.dto.project.ProjectMemberResponseDto;
 import com.andrii.taskmanagement.dto.project.ProjectResponseDto;
 import com.andrii.taskmanagement.dto.project.ProjectSearchParameters;
 import com.andrii.taskmanagement.dto.project.ProjectUpdateRequestDto;
 import com.andrii.taskmanagement.exception.EntityNotFoundException;
 import com.andrii.taskmanagement.mapper.ProjectMapper;
 import com.andrii.taskmanagement.model.Project;
+import com.andrii.taskmanagement.model.ProjectMember;
 import com.andrii.taskmanagement.model.ProjectStatus;
 import com.andrii.taskmanagement.model.RoleName;
 import com.andrii.taskmanagement.model.User;
 import com.andrii.taskmanagement.repository.project.ProjectMemberRepository;
 import com.andrii.taskmanagement.repository.project.ProjectRepository;
 import com.andrii.taskmanagement.repository.user.UserRepository;
+import com.andrii.taskmanagement.service.ProjectAccessService;
 import com.andrii.taskmanagement.service.ProjectService;
 import com.andrii.taskmanagement.specification.ProjectSpecificationBuilder;
 import com.andrii.taskmanagement.specification.ProjectSpecifications;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,11 +35,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @RequiredArgsConstructor
 public class ProjectServiceImpl implements ProjectService {
+
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectMapper projectMapper;
     private final ProjectSpecificationBuilder projectSpecificationBuilder;
+    private final ProjectAccessService projectAccessService;
 
     @Override
     public ProjectResponseDto save(
@@ -43,8 +50,7 @@ public class ProjectServiceImpl implements ProjectService {
     ) {
         User creator = findUserByEmail(creatorEmail);
 
-        User projectManager = userRepository
-                .findByIdAndRoleName(
+        User projectManager = userRepository.findByIdAndRoleName(
                         requestDto.projectManagerId(),
                         RoleName.ROLE_PROJECT_MANAGER
                 )
@@ -65,7 +71,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project savedProject = projectRepository.save(project);
 
-        return projectMapper.toProjectResponse(savedProject);
+        return projectMapper.toProjectResponse(savedProject, List.of());
     }
 
     @Override
@@ -77,8 +83,7 @@ public class ProjectServiceImpl implements ProjectService {
     ) {
         User user = findUserByEmail(email);
 
-        Specification<Project> specification =
-                projectSpecificationBuilder.build(searchParameters);
+        Specification<Project> specification = projectSpecificationBuilder.build(searchParameters);
 
         if (isProjectManager(user)) {
             specification = specification.and(
@@ -90,23 +95,61 @@ public class ProjectServiceImpl implements ProjectService {
             );
         }
 
-        return projectRepository
-                .findAll(specification, pageable)
-                .map(projectMapper::toProjectResponse);
+        Page<Project> projectPage = projectRepository.findAll(specification, pageable);
+        List<Project> projects = projectPage.getContent();
+
+        if (projects.isEmpty()) {
+            return projectPage.map(project ->
+                    projectMapper.toProjectResponse(project, List.of())
+            );
+        }
+
+        List<Long> projectIds = projects.stream()
+                .map(Project::getId)
+                .toList();
+
+        List<ProjectMember> projectMembers = projectMemberRepository
+                        .findAllByProjectIdsWithUsers(projectIds);
+
+        Map<Long, List<ProjectMemberResponseDto>> membersByProject =
+                projectMembers.stream()
+                        .collect(Collectors.groupingBy(
+                                pm -> pm.getProject().getId(),
+                                Collectors.mapping(
+                                        projectMapper::toProjectMemberResponse,
+                                        Collectors.toList()
+                                )
+                        ));
+
+        return projectPage.map(project ->
+                projectMapper.toProjectResponse(
+                        project,
+                        membersByProject.getOrDefault(
+                                project.getId(),
+                                List.of()
+                        )
+                )
+        );
     }
 
     @Override
     @Transactional(readOnly = true)
-    public ProjectResponseDto findById(
-            Long id,
-            String email
-    ) {
+    public ProjectResponseDto findById(Long id, String email) {
         User user = findUserByEmail(email);
         Project project = findProjectById(id);
 
-        checkCanViewProject(user, project);
+        projectAccessService.checkCanViewProject(user, project);
 
-        return projectMapper.toProjectResponse(project);
+        List<ProjectMemberResponseDto> members =
+                projectMemberRepository
+                        .findAllByProjectIdsWithUsers(
+                                List.of(project.getId())
+                        )
+                        .stream()
+                        .map(projectMapper::toProjectMemberResponse)
+                        .toList();
+
+        return projectMapper.toProjectResponse(project, members);
     }
 
     @Override
@@ -118,23 +161,32 @@ public class ProjectServiceImpl implements ProjectService {
         User user = findUserByEmail(email);
         Project project = findProjectById(id);
 
-        checkCanModifyProject(user, project);
+        projectAccessService.checkCanModifyProject(user, project);
 
         projectMapper.updateProjectFromDto(requestDto, project);
+
         project.setUpdatedAt(LocalDateTime.now());
 
-        return projectMapper.toProjectResponse(projectRepository.save(project));
+        Project updatedProject = projectRepository.save(project);
+
+        List<ProjectMemberResponseDto> members =
+                projectMemberRepository
+                        .findAllByProjectIdsWithUsers(
+                                List.of(project.getId())
+                        )
+                        .stream()
+                        .map(projectMapper::toProjectMemberResponse)
+                        .toList();
+
+        return projectMapper.toProjectResponse(updatedProject, members);
     }
 
     @Override
-    public void deleteById(
-            Long id,
-            String email
-    ) {
+    public void deleteById(Long id, String email) {
         User user = findUserByEmail(email);
         Project project = findProjectById(id);
 
-        checkCanModifyProject(user, project);
+        projectAccessService.checkCanModifyProject(user, project);
 
         projectRepository.delete(project);
     }
@@ -161,7 +213,16 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project updatedProject = projectRepository.save(project);
 
-        return projectMapper.toProjectResponse(updatedProject);
+        List<ProjectMemberResponseDto> members =
+                projectMemberRepository
+                        .findAllByProjectIdsWithUsers(
+                                List.of(project.getId())
+                        )
+                        .stream()
+                        .map(projectMapper::toProjectMemberResponse)
+                        .toList();
+
+        return projectMapper.toProjectResponse(updatedProject, members);
     }
 
     private User findUserByEmail(String email) {
@@ -176,50 +237,6 @@ public class ProjectServiceImpl implements ProjectService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Can't find the project by id: " + id
                 ));
-    }
-
-    private void checkCanViewProject(User user, Project project) {
-        if (isAdmin(user)) {
-            return;
-        }
-
-        if (isProjectManager(user)) {
-            if (project.getProjectManager().getId().equals(user.getId())) {
-                return;
-            }
-
-            throw new AccessDeniedException("You don't have access to this project");
-        }
-
-        if (isTeamMember(user)) {
-            boolean member = projectMemberRepository
-                    .existsByProjectIdAndUserId(project.getId(), user.getId());
-
-            if (member) {
-                return;
-            }
-
-            throw new AccessDeniedException("You don't have access to this project");
-        }
-
-        throw new AccessDeniedException("You don't have permission to access projects");
-    }
-
-    private void checkCanModifyProject(User user, Project project) {
-        if (isAdmin(user)) {
-            return;
-        }
-
-        if (isProjectManager(user)
-                && project.getProjectManager().getId().equals(user.getId())) {
-            return;
-        }
-
-        throw new AccessDeniedException("You don't have permission to modify this project");
-    }
-
-    private boolean isAdmin(User user) {
-        return user.getRole().getName() == RoleName.ROLE_ADMIN;
     }
 
     private boolean isProjectManager(User user) {
