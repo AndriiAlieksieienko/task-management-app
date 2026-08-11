@@ -35,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @RequiredArgsConstructor
 public class ProjectServiceImpl implements ProjectService {
-
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ProjectMemberRepository projectMemberRepository;
@@ -140,14 +139,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         projectAccessService.checkCanViewProject(user, project);
 
-        List<ProjectMemberResponseDto> members =
-                projectMemberRepository
-                        .findAllByProjectIdsWithUsers(
-                                List.of(project.getId())
-                        )
-                        .stream()
-                        .map(projectMapper::toProjectMemberResponse)
-                        .toList();
+        List<ProjectMemberResponseDto> members = findProjectMembers(project.getId());
 
         return projectMapper.toProjectResponse(project, members);
     }
@@ -169,14 +161,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project updatedProject = projectRepository.save(project);
 
-        List<ProjectMemberResponseDto> members =
-                projectMemberRepository
-                        .findAllByProjectIdsWithUsers(
-                                List.of(project.getId())
-                        )
-                        .stream()
-                        .map(projectMapper::toProjectMemberResponse)
-                        .toList();
+        List<ProjectMemberResponseDto> members = findProjectMembers(project.getId());
 
         return projectMapper.toProjectResponse(updatedProject, members);
     }
@@ -213,14 +198,7 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project updatedProject = projectRepository.save(project);
 
-        List<ProjectMemberResponseDto> members =
-                projectMemberRepository
-                        .findAllByProjectIdsWithUsers(
-                                List.of(project.getId())
-                        )
-                        .stream()
-                        .map(projectMapper::toProjectMemberResponse)
-                        .toList();
+        List<ProjectMemberResponseDto> members = findProjectMembers(projectId);
 
         return projectMapper.toProjectResponse(updatedProject, members);
     }
@@ -245,5 +223,13 @@ public class ProjectServiceImpl implements ProjectService {
 
     private boolean isTeamMember(User user) {
         return user.getRole().getName() == RoleName.ROLE_TEAM_MEMBER;
+    }
+
+    private List<ProjectMemberResponseDto> findProjectMembers(Long projectId) {
+        return projectMemberRepository
+                .findAllByProjectIdsWithUsers(List.of(projectId))
+                .stream()
+                .map(projectMapper::toProjectMemberResponse)
+                .toList();
     }
 }
