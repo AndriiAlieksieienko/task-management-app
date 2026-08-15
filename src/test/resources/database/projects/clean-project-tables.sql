@@ -1,3 +1,7 @@
+DELETE FROM project_members;
+
+DELETE FROM projects;
+
 DELETE FROM users
 WHERE email IN (
     'project-test-admin@gmail.com',

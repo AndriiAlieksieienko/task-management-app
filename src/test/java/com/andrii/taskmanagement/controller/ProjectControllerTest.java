@@ -7,12 +7,9 @@ import com.andrii.taskmanagement.model.Project;
 import com.andrii.taskmanagement.model.ProjectMember;
 import com.andrii.taskmanagement.model.ProjectMemberId;
 import com.andrii.taskmanagement.model.ProjectStatus;
-import com.andrii.taskmanagement.model.Role;
-import com.andrii.taskmanagement.model.RoleName;
 import com.andrii.taskmanagement.model.User;
 import com.andrii.taskmanagement.repository.project.ProjectMemberRepository;
 import com.andrii.taskmanagement.repository.project.ProjectRepository;
-import com.andrii.taskmanagement.repository.user.RoleRepository;
 import com.andrii.taskmanagement.repository.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +20,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -44,6 +42,18 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 @AutoConfigureMockMvc
 @Testcontainers
 @ActiveProfiles("test")
+@Sql(
+        scripts = {
+                "classpath:database/projects/clean-project-tables.sql",
+                "classpath:database/users/insert-project-test-users.sql"
+        },
+        executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
+)
+
+@Sql(
+        scripts = "classpath:database/projects/clean-project-tables.sql",
+        executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
+)
 class ProjectControllerTest {
     @Container
     @ServiceConnection
@@ -67,13 +77,7 @@ class ProjectControllerTest {
     private UserRepository userRepository;
 
     @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
     private ProjectMemberRepository projectMemberRepository;
-
-    @Autowired
-    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     private User admin;
     private User projectManager;
@@ -82,39 +86,10 @@ class ProjectControllerTest {
 
     @BeforeEach
     void setUp() {
-        projectRepository.deleteAll();
-
-        admin = findOrCreateUser(
-                ADMIN_EMAIL,
-                "projectTestAdmin",
-                "Admin",
-                "Test",
-                RoleName.ROLE_ADMIN
-        );
-
-        projectManager = findOrCreateUser(
-                PROJECT_MANAGER_EMAIL,
-                "projectTestManager",
-                "Project",
-                "Manager",
-                RoleName.ROLE_PROJECT_MANAGER
-        );
-
-        teamMember = findOrCreateUser(
-                TEAM_MEMBER_EMAIL,
-                "projectTestMember",
-                "Team",
-                "Member",
-                RoleName.ROLE_TEAM_MEMBER
-        );
-
-        secondTeamMember = findOrCreateUser(
-                SECOND_TEAM_MEMBER_EMAIL,
-                "projectTestMember2",
-                "Second",
-                "Member",
-                RoleName.ROLE_TEAM_MEMBER
-        );
+        admin = userRepository.findByEmail(ADMIN_EMAIL).orElseThrow();
+        projectManager = userRepository.findByEmail(PROJECT_MANAGER_EMAIL).orElseThrow();
+        teamMember = userRepository.findByEmail(TEAM_MEMBER_EMAIL).orElseThrow();
+        secondTeamMember = userRepository.findByEmail(SECOND_TEAM_MEMBER_EMAIL).orElseThrow();
     }
 
     @Test
@@ -563,44 +538,6 @@ class ProjectControllerTest {
         project.setUpdatedAt(now);
 
         return projectRepository.save(project);
-    }
-
-    private User findOrCreateUser(
-            String email,
-            String username,
-            String firstName,
-            String lastName,
-            RoleName roleName
-    ) {
-        return userRepository.findByEmail(email)
-                .orElseGet(() -> {
-                    Role role = roleRepository.findAll()
-                            .stream()
-                            .filter(existingRole ->
-                                    existingRole.getName() == roleName)
-                            .findFirst()
-                            .orElseGet(() -> {
-                                Role newRole = new Role();
-                                newRole.setName(roleName);
-                                return roleRepository.save(newRole);
-                            });
-
-                    User user = new User();
-
-                    user.setUsername(username);
-                    user.setEmail(email);
-                    user.setPassword(passwordEncoder.encode("testPassword123"));
-                    user.setFirstName(firstName);
-                    user.setLastName(lastName);
-                    user.setRole(role);
-
-                    LocalDateTime now = LocalDateTime.now();
-
-                    user.setCreatedAt(now);
-                    user.setUpdatedAt(now);
-
-                    return userRepository.save(user);
-                });
     }
 
     private ProjectMember addMember(Project project, User user) {
