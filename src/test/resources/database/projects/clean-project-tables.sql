@@ -1,11 +1,16 @@
+DELETE FROM comments;
+
+DELETE FROM attachments;
+
+DELETE FROM task_labels;
+
+DELETE FROM labels;
+
+DELETE FROM tasks;
+
 DELETE FROM project_members;
 
 DELETE FROM projects;
 
 DELETE FROM users
-WHERE email IN (
-    'project-test-admin@gmail.com',
-    'project-test-manager@gmail.com',
-    'project-test-member@gmail.com',
-    'project-test-member-2@gmail.com'
-);
+WHERE email LIKE 'project-test-%@gmail.com';

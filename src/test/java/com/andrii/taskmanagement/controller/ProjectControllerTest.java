@@ -2,6 +2,8 @@ package com.andrii.taskmanagement.controller;
 
 import com.andrii.taskmanagement.config.CustomMySqlContainer;
 import com.andrii.taskmanagement.dto.project.ProjectCreateRequestDto;
+import com.andrii.taskmanagement.dto.project.ProjectManagerUpdateRequestDto;
+import com.andrii.taskmanagement.dto.project.ProjectMemberCreateRequestDto;
 import com.andrii.taskmanagement.dto.project.ProjectUpdateRequestDto;
 import com.andrii.taskmanagement.model.Project;
 import com.andrii.taskmanagement.model.ProjectMember;
@@ -61,6 +63,7 @@ class ProjectControllerTest {
 
     private static final String ADMIN_EMAIL = "project-test-admin@gmail.com";
     private static final String PROJECT_MANAGER_EMAIL = "project-test-manager@gmail.com";
+    private static final String SECOND_PROJECT_MANAGER_EMAIL = "project-test-manager-2@gmail.com";
     private static final String TEAM_MEMBER_EMAIL = "project-test-member@gmail.com";
     private static final String SECOND_TEAM_MEMBER_EMAIL = "project-test-member-2@gmail.com";
 
@@ -81,6 +84,7 @@ class ProjectControllerTest {
 
     private User admin;
     private User projectManager;
+    private User secondProjectManager;
     private User teamMember;
     private User secondTeamMember;
 
@@ -88,6 +92,7 @@ class ProjectControllerTest {
     void setUp() {
         admin = userRepository.findByEmail(ADMIN_EMAIL).orElseThrow();
         projectManager = userRepository.findByEmail(PROJECT_MANAGER_EMAIL).orElseThrow();
+        secondProjectManager = userRepository.findByEmail(SECOND_PROJECT_MANAGER_EMAIL).orElseThrow();
         teamMember = userRepository.findByEmail(TEAM_MEMBER_EMAIL).orElseThrow();
         secondTeamMember = userRepository.findByEmail(SECOND_TEAM_MEMBER_EMAIL).orElseThrow();
     }
@@ -517,6 +522,213 @@ class ProjectControllerTest {
                                 .with(user(ADMIN_EMAIL).roles("ADMIN"))
                                 .contentType(APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(requestDto))
+                )
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Update project manager - admin - returns updated project")
+    void updateProjectManager_Admin_ReturnUpdatedProject() throws Exception {
+        Project project = createProject("Project", "Description");
+
+        ProjectManagerUpdateRequestDto requestDto =
+                new ProjectManagerUpdateRequestDto(secondProjectManager.getId());
+
+        mockMvc.perform(
+                        put("/api/projects/{id}/manager", project.getId())
+                                .with(user(ADMIN_EMAIL).roles("ADMIN"))
+                                .contentType(APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDto))
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.projectManagerId").value(secondProjectManager.getId()));
+
+        Project updatedProject = projectRepository.findById(project.getId()).orElseThrow();
+        assertThat(updatedProject.getProjectManager().getId())
+                .isEqualTo(secondProjectManager.getId());
+    }
+
+    @Test
+    @DisplayName("Update project manager - project manager role - forbidden")
+    void updateProjectManager_ProjectManagerRole_ReturnsForbidden() throws Exception {
+        Project project = createProject("Project", "Description");
+
+        ProjectManagerUpdateRequestDto requestDto =
+                new ProjectManagerUpdateRequestDto(secondProjectManager.getId());
+
+        mockMvc.perform(
+                        put("/api/projects/{id}/manager", project.getId())
+                                .with(user(PROJECT_MANAGER_EMAIL).roles("PROJECT_MANAGER"))
+                                .contentType(APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDto))
+                )
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Update project manager - nonexistent new manager - not found")
+    void updateProjectManager_NonexistentManager_ReturnsNotFound() throws Exception {
+        Project project = createProject("Project", "Description");
+
+        ProjectManagerUpdateRequestDto requestDto = new ProjectManagerUpdateRequestDto(999999L);
+
+        mockMvc.perform(
+                        put("/api/projects/{id}/manager", project.getId())
+                                .with(user(ADMIN_EMAIL).roles("ADMIN"))
+                                .contentType(APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDto))
+                )
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Update project manager - nonexistent project - not found")
+    void updateProjectManager_NonexistentProject_ReturnsNotFound() throws Exception {
+        ProjectManagerUpdateRequestDto requestDto =
+                new ProjectManagerUpdateRequestDto(secondProjectManager.getId());
+
+        mockMvc.perform(
+                        put("/api/projects/{id}/manager", 999999L)
+                                .with(user(ADMIN_EMAIL).roles("ADMIN"))
+                                .contentType(APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDto))
+                )
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Add member - project manager - returns created member")
+    void addMember_ProjectManager_ReturnCreatedMember() throws Exception {
+        Project project = createProject("Project", "Description");
+
+        ProjectMemberCreateRequestDto requestDto =
+                new ProjectMemberCreateRequestDto(teamMember.getId());
+
+        mockMvc.perform(
+                        post("/api/projects/{projectId}/members", project.getId())
+                                .with(user(PROJECT_MANAGER_EMAIL).roles("PROJECT_MANAGER"))
+                                .contentType(APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDto))
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId").value(teamMember.getId()));
+
+        assertThat(
+                projectMemberRepository.existsByProjectIdAndUserId(
+                        project.getId(), teamMember.getId()
+                )
+        ).isTrue();
+    }
+
+    @Test
+    @DisplayName("Add member - team member - forbidden")
+    void addMember_TeamMember_ReturnsForbidden() throws Exception {
+        Project project = createProject("Project", "Description");
+
+        ProjectMemberCreateRequestDto requestDto =
+                new ProjectMemberCreateRequestDto(secondTeamMember.getId());
+
+        mockMvc.perform(
+                        post("/api/projects/{projectId}/members", project.getId())
+                                .with(user(TEAM_MEMBER_EMAIL).roles("TEAM_MEMBER"))
+                                .contentType(APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDto))
+                )
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Add member - user is not a team member - not found")
+    void addMember_UserNotTeamMember_ReturnsNotFound() throws Exception {
+        Project project = createProject("Project", "Description");
+
+        ProjectMemberCreateRequestDto requestDto =
+                new ProjectMemberCreateRequestDto(secondProjectManager.getId());
+
+        mockMvc.perform(
+                        post("/api/projects/{projectId}/members", project.getId())
+                                .with(user(PROJECT_MANAGER_EMAIL).roles("PROJECT_MANAGER"))
+                                .contentType(APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDto))
+                )
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Add member - nonexistent project - not found")
+    void addMember_NonexistentProject_ReturnsNotFound() throws Exception {
+        ProjectMemberCreateRequestDto requestDto =
+                new ProjectMemberCreateRequestDto(teamMember.getId());
+
+        mockMvc.perform(
+                        post("/api/projects/{projectId}/members", 999999L)
+                                .with(user(PROJECT_MANAGER_EMAIL).roles("PROJECT_MANAGER"))
+                                .contentType(APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(requestDto))
+                )
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Remove member - project manager - returns no content")
+    void removeMember_ProjectManager_ReturnsNoContent() throws Exception {
+        Project project = createProject("Project", "Description");
+        addMember(project, teamMember);
+
+        mockMvc.perform(
+                        delete("/api/projects/{projectId}/members/{userId}",
+                                project.getId(), teamMember.getId())
+                                .with(user(PROJECT_MANAGER_EMAIL).roles("PROJECT_MANAGER"))
+                )
+                .andExpect(status().isNoContent());
+
+        assertThat(
+                projectMemberRepository.existsByProjectIdAndUserId(
+                        project.getId(), teamMember.getId()
+                )
+        ).isFalse();
+    }
+
+    @Test
+    @DisplayName("Remove member - team member - forbidden")
+    void removeMember_TeamMember_ReturnsForbidden() throws Exception {
+        Project project = createProject("Project", "Description");
+        addMember(project, teamMember);
+
+        mockMvc.perform(
+                        delete("/api/projects/{projectId}/members/{userId}",
+                                project.getId(), teamMember.getId())
+                                .with(user(SECOND_TEAM_MEMBER_EMAIL).roles("TEAM_MEMBER"))
+                )
+                .andExpect(status().isForbidden());
+
+        assertThat(
+                projectMemberRepository.existsByProjectIdAndUserId(
+                        project.getId(), teamMember.getId()
+                )
+        ).isTrue();
+    }
+
+    @Test
+    @DisplayName("Remove member - not a member - not found")
+    void removeMember_NotAMember_ReturnsNotFound() throws Exception {
+        Project project = createProject("Project", "Description");
+
+        mockMvc.perform(
+                        delete("/api/projects/{projectId}/members/{userId}",
+                                project.getId(), teamMember.getId())
+                                .with(user(PROJECT_MANAGER_EMAIL).roles("PROJECT_MANAGER"))
+                )
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Remove member - nonexistent project - not found")
+    void removeMember_NonexistentProject_ReturnsNotFound() throws Exception {
+        mockMvc.perform(
+                        delete("/api/projects/{projectId}/members/{userId}",
+                                999999L, teamMember.getId())
+                                .with(user(PROJECT_MANAGER_EMAIL).roles("PROJECT_MANAGER"))
                 )
                 .andExpect(status().isNotFound());
     }
