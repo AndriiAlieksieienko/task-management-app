@@ -150,9 +150,6 @@ class JwtUtilTest {
         String token = jwtUtil.generateToken(USERNAME);
         String[] parts = token.split("\\.");
 
-        // Swap in a different (still validly base64url-encoded) payload while
-        // keeping the original header and signature, simulating an attacker
-        // trying to change the subject without re-signing.
         String tamperedPayload = Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(
                         "{\"sub\":\"attacker@example.com\"}".getBytes(StandardCharsets.UTF_8)

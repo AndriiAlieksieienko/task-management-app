@@ -93,9 +93,6 @@ class AuthenticationServiceImplTest {
     @Test
     @DisplayName("Authenticate - generates token using the authenticated principal's name")
     void authenticate_ValidCredentials_GeneratesTokenForAuthenticatedName() {
-        // authenticationManager may return an Authentication whose name differs
-        // from the raw input (e.g. normalized casing) - the token must be
-        // generated from that, not from the original request DTO
         Authentication successfulAuthentication = new UsernamePasswordAuthenticationToken(
                 "normalized-" + EMAIL,
                 PASSWORD,

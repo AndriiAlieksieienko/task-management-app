@@ -264,8 +264,6 @@ class ProjectServiceImplTest {
         when(userRepository.findByEmail(MEMBER_EMAIL)).thenReturn(Optional.of(teamMember));
         when(projectRepository.findById(project.getId())).thenReturn(Optional.of(project));
 
-        // NOTE: replace RuntimeException with the real exception type thrown by
-        // your ProjectAccessService implementation (e.g. AccessDeniedException).
         doThrow(new RuntimeException("Access denied"))
                 .when(projectAccessService).checkCanViewProject(teamMember, project);
 

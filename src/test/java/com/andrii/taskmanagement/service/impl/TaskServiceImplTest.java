@@ -290,7 +290,6 @@ class TaskServiceImplTest {
         when(projectRepository.findById(project.getId())).thenReturn(Optional.of(project));
         when(taskMapper.toModel(createDto)).thenReturn(task);
         when(userRepository.findById(assignee.getId())).thenReturn(Optional.of(assignee));
-        // only one of the two requested labels exists
         when(labelRepository.findAllById(createDto.labelIds())).thenReturn(List.of(labelOne));
 
         EntityNotFoundException exception = assertThrows(

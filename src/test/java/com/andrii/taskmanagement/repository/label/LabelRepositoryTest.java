@@ -44,7 +44,6 @@ class LabelRepositoryTest extends AbstractRepositoryTest {
     void save_ValidLabel_PersistsLabel() {
         Label label = new Label();
 
-        // project id 1 comes from the projects fixture above
         label.setProject(projectRepository.getReferenceById(1L));
         label.setName("New Label");
         label.setColor("#123456");
