@@ -1,1 +1,2 @@
-DELETE FROM attachments WHERE uploaded_by IN (1, 2, 3);
+DELETE FROM attachments
+WHERE id IN (1, 2, 3);

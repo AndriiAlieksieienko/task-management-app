@@ -46,11 +46,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @ActiveProfiles("test")
 @Sql(
-        scripts = "classpath:database/users/insert-comment-test-users.sql",
+        scripts = "classpath:database/users/insert-user-test-users.sql",
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
 )
 @Sql(
-        scripts = "classpath:database/users/clean-comment-test-data.sql",
+        scripts = "classpath:database/clean-data.sql",
         executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
 )
 class CommentControllerTest {
@@ -58,10 +58,10 @@ class CommentControllerTest {
     @ServiceConnection
     static final CustomMySqlContainer MYSQL_CONTAINER = CustomMySqlContainer.getInstance();
 
-    private static final String ADMIN_EMAIL = "comment-test-admin@gmail.com";
-    private static final String MANAGER_EMAIL = "comment-test-manager@gmail.com";
-    private static final String MEMBER_EMAIL = "comment-test-member@gmail.com";
-    private static final String SECOND_MEMBER_EMAIL = "comment-test-member-2@gmail.com";
+    private static final String ADMIN_EMAIL = "user-test-admin@gmail.com";
+    private static final String MANAGER_EMAIL = "user-test-manager@gmail.com";
+    private static final String MEMBER_EMAIL = "user-test-member@gmail.com";
+    private static final String SECOND_MEMBER_EMAIL = "user-test-member-2@gmail.com";
 
     @Autowired
     private MockMvc mockMvc;

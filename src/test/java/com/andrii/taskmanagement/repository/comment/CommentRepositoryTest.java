@@ -1,6 +1,8 @@
 package com.andrii.taskmanagement.repository.comment;
 
 import com.andrii.taskmanagement.model.Comment;
+import com.andrii.taskmanagement.model.Task;
+import com.andrii.taskmanagement.model.User;
 import com.andrii.taskmanagement.repository.AbstractRepositoryTest;
 import com.andrii.taskmanagement.repository.task.TaskRepository;
 import com.andrii.taskmanagement.repository.user.UserRepository;
@@ -19,6 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class CommentRepositoryTest extends AbstractRepositoryTest {
+
+    private static final String MEMBER_EMAIL =
+            "user-test-member@gmail.com";
+
     @Autowired
     private CommentRepository commentRepository;
 
@@ -32,60 +38,65 @@ class CommentRepositoryTest extends AbstractRepositoryTest {
     @DisplayName("Save comment - valid comment - persists and generates id")
     @Sql(
             scripts = {
-                    "classpath:database/users/add-comment-repository-users.sql",
-                    "classpath:database/projects/add-comment-repository-projects.sql",
-                    "classpath:database/tasks/add-comment-repository-tasks.sql"
+                    "classpath:database/users/insert-user-test-users.sql",
+                    "classpath:database/projects/insert-repository-test-projects.sql",
+                    "classpath:database/tasks/add-repository-tasks.sql"
             },
             executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
     )
     @Sql(
-            scripts = {
-                    "classpath:database/comments/remove-comment-repository-comments.sql",
-                    "classpath:database/tasks/remove-comment-repository-tasks.sql",
-                    "classpath:database/projects/remove-comment-repository-projects.sql",
-                    "classpath:database/users/remove-comment-repository-users.sql"
-            },
+            scripts = "classpath:database/clean-data.sql",
             executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
     )
     void save_ValidComment_PersistsComment() {
+
+        Task task = taskRepository
+                .findById(1L)
+                .orElseThrow();
+
+        User member = userRepository
+                .findByEmail(MEMBER_EMAIL)
+                .orElseThrow();
+
         Comment comment = new Comment();
 
-        // task id 1 and user id 3 come from the tasks/users fixtures above
-        comment.setTask(taskRepository.getReferenceById(1L));
-        comment.setUser(userRepository.getReferenceById(3L));
+        comment.setTask(task);
+        comment.setUser(member);
         comment.setText("A brand new comment");
         comment.setCreatedAt(LocalDateTime.now());
 
         Comment saved = commentRepository.save(comment);
 
-        assertThat(saved.getId()).isNotNull();
-        assertThat(commentRepository.findById(saved.getId())).isPresent();
+        assertThat(saved.getId())
+                .isNotNull();
+
+        assertThat(commentRepository.findById(saved.getId()))
+                .isPresent();
     }
 
     @Test
     @DisplayName("Find all by task id - existing task - returns only its comments")
     @Sql(
             scripts = {
-                    "classpath:database/users/add-comment-repository-users.sql",
-                    "classpath:database/projects/add-comment-repository-projects.sql",
-                    "classpath:database/tasks/add-comment-repository-tasks.sql",
+                    "classpath:database/users/insert-user-test-users.sql",
+                    "classpath:database/projects/insert-repository-test-projects.sql",
+                    "classpath:database/tasks/add-repository-tasks.sql",
                     "classpath:database/comments/add-comment-repository-comments.sql"
             },
             executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
     )
     @Sql(
-            scripts = {
-                    "classpath:database/comments/remove-comment-repository-comments.sql",
-                    "classpath:database/tasks/remove-comment-repository-tasks.sql",
-                    "classpath:database/projects/remove-comment-repository-projects.sql",
-                    "classpath:database/users/remove-comment-repository-users.sql"
-            },
+            scripts = "classpath:database/clean-data.sql",
             executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
     )
     void findAllByTaskId_ExistingTaskId_ReturnsCommentsForThatTask() {
-        List<Comment> taskOneComments = commentRepository.findAllByTaskId(1L);
 
-        assertThat(taskOneComments).hasSize(2);
+        List<Comment> taskOneComments =
+                commentRepository.findAllByTaskId(1L);
+
+        assertThat(taskOneComments)
+                .hasSize(2);
+
         assertThat(taskOneComments)
                 .extracting(Comment::getText)
                 .containsExactlyInAnyOrder(
@@ -93,37 +104,40 @@ class CommentRepositoryTest extends AbstractRepositoryTest {
                         "Second comment on task one"
                 );
 
-        List<Comment> taskTwoComments = commentRepository.findAllByTaskId(2L);
+        List<Comment> taskTwoComments =
+                commentRepository.findAllByTaskId(2L);
 
-        assertThat(taskTwoComments).hasSize(1);
+        assertThat(taskTwoComments)
+                .hasSize(1);
+
         assertThat(taskTwoComments)
                 .extracting(Comment::getText)
-                .containsExactly("First comment on task two");
+                .containsExactly(
+                        "First comment on task two"
+                );
     }
 
     @Test
     @DisplayName("Find all by task id - nonexistent task - returns empty list")
     @Sql(
             scripts = {
-                    "classpath:database/users/add-comment-repository-users.sql",
-                    "classpath:database/projects/add-comment-repository-projects.sql",
-                    "classpath:database/tasks/add-comment-repository-tasks.sql",
+                    "classpath:database/users/insert-user-test-users.sql",
+                    "classpath:database/projects/insert-repository-test-projects.sql",
+                    "classpath:database/tasks/add-repository-tasks.sql",
                     "classpath:database/comments/add-comment-repository-comments.sql"
             },
             executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
     )
     @Sql(
-            scripts = {
-                    "classpath:database/comments/remove-comment-repository-comments.sql",
-                    "classpath:database/tasks/remove-comment-repository-tasks.sql",
-                    "classpath:database/projects/remove-comment-repository-projects.sql",
-                    "classpath:database/users/remove-comment-repository-users.sql"
-            },
+            scripts = "classpath:database/clean-data.sql",
             executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
     )
     void findAllByTaskId_NonexistentTaskId_ReturnsEmptyList() {
-        List<Comment> actual = commentRepository.findAllByTaskId(999L);
 
-        assertThat(actual).isEmpty();
+        List<Comment> actual =
+                commentRepository.findAllByTaskId(999L);
+
+        assertThat(actual)
+                .isEmpty();
     }
 }

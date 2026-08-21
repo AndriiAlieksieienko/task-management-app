@@ -45,11 +45,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @ActiveProfiles("test")
 @Sql(
-        scripts = "classpath:database/users/insert-label-test-users.sql",
+        scripts = "classpath:database/users/insert-user-test-users.sql",
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
 )
 @Sql(
-        scripts = "classpath:database/users/clean-label-test-data.sql",
+        scripts = "classpath:database/clean-data.sql",
         executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
 )
 class LabelControllerTest {
@@ -57,10 +57,10 @@ class LabelControllerTest {
     @ServiceConnection
     static final CustomMySqlContainer MYSQL_CONTAINER = CustomMySqlContainer.getInstance();
 
-    private static final String ADMIN_EMAIL = "label-test-admin@gmail.com";
-    private static final String MANAGER_EMAIL = "label-test-manager@gmail.com";
-    private static final String MEMBER_EMAIL = "label-test-member@gmail.com";
-    private static final String SECOND_MEMBER_EMAIL = "label-test-member-2@gmail.com";
+    private static final String ADMIN_EMAIL = "user-test-admin@gmail.com";
+    private static final String MANAGER_EMAIL = "user-test-manager@gmail.com";
+    private static final String MEMBER_EMAIL = "user-test-member@gmail.com";
+    private static final String SECOND_MEMBER_EMAIL = "user-test-member-2@gmail.com";
 
     @Autowired
     private MockMvc mockMvc;

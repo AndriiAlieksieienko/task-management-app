@@ -46,14 +46,14 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 @ActiveProfiles("test")
 @Sql(
         scripts = {
-                "classpath:database/projects/clean-project-tables.sql",
-                "classpath:database/users/insert-project-test-users.sql"
+                "classpath:database/clean-data.sql",
+                "classpath:database/users/insert-user-test-users.sql"
         },
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
 )
 
 @Sql(
-        scripts = "classpath:database/projects/clean-project-tables.sql",
+        scripts = "classpath:database/clean-data.sql",
         executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
 )
 class ProjectControllerTest {
@@ -61,11 +61,11 @@ class ProjectControllerTest {
     @ServiceConnection
     static final CustomMySqlContainer MYSQL_CONTAINER = CustomMySqlContainer.getInstance();
 
-    private static final String ADMIN_EMAIL = "project-test-admin@gmail.com";
-    private static final String PROJECT_MANAGER_EMAIL = "project-test-manager@gmail.com";
-    private static final String SECOND_PROJECT_MANAGER_EMAIL = "project-test-manager-2@gmail.com";
-    private static final String TEAM_MEMBER_EMAIL = "project-test-member@gmail.com";
-    private static final String SECOND_TEAM_MEMBER_EMAIL = "project-test-member-2@gmail.com";
+    private static final String ADMIN_EMAIL = "user-test-admin@gmail.com";
+    private static final String PROJECT_MANAGER_EMAIL = "user-test-manager@gmail.com";
+    private static final String SECOND_PROJECT_MANAGER_EMAIL = "user-test-manager-2@gmail.com";
+    private static final String TEAM_MEMBER_EMAIL = "user-test-member@gmail.com";
+    private static final String SECOND_TEAM_MEMBER_EMAIL = "user-test-member-2@gmail.com";
 
     @Autowired
     private MockMvc mockMvc;

@@ -17,21 +17,30 @@ import org.springframework.test.context.jdbc.Sql;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Sql(
-        scripts = "classpath:database/users/add-user-repository-users.sql",
+        scripts = "classpath:database/users/insert-user-test-users.sql",
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
 )
 @Sql(
-        scripts = "classpath:database/users/remove-user-repository-users.sql",
+        scripts = "classpath:database/users/remove-user-test-users.sql",
         executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
 )
 class UserRepositoryTest extends AbstractRepositoryTest {
+
+    private static final String ADMIN_EMAIL = "user-test-admin@gmail.com";
+    private static final String MANAGER_EMAIL = "user-test-manager@gmail.com";
+    private static final String MEMBER_EMAIL = "user-test-member@gmail.com";
+
+    private static final String ADMIN_USERNAME = "userTestAdmin";
+    private static final String MANAGER_USERNAME = "userTestManager";
+    private static final String MEMBER_USERNAME = "userTestMember";
+
     @Autowired
     private UserRepository userRepository;
 
     @Test
     @DisplayName("Exists by email - existing email - returns true")
     void existsByEmail_ExistingEmail_ReturnsTrue() {
-        boolean actual = userRepository.existsByEmail("user-repo-admin@gmail.com");
+        boolean actual = userRepository.existsByEmail(ADMIN_EMAIL);
 
         assertThat(actual).isTrue();
     }
@@ -47,7 +56,7 @@ class UserRepositoryTest extends AbstractRepositoryTest {
     @Test
     @DisplayName("Exists by username - existing username - returns true")
     void existsByUsername_ExistingUsername_ReturnsTrue() {
-        boolean actual = userRepository.existsByUsername("userRepoManager");
+        boolean actual = userRepository.existsByUsername(MANAGER_USERNAME);
 
         assertThat(actual).isTrue();
     }
@@ -63,12 +72,14 @@ class UserRepositoryTest extends AbstractRepositoryTest {
     @Test
     @DisplayName("Find by email - existing email - returns user with role fetched")
     void findByEmail_ExistingEmail_ReturnsUserWithRole() {
-        Optional<User> actual = userRepository.findByEmail("user-repo-member@gmail.com");
+        Optional<User> actual = userRepository.findByEmail(MEMBER_EMAIL);
 
         assertThat(actual).isPresent();
-        assertThat(actual.get().getUsername()).isEqualTo("user-repo-member@gmail.com");
+        assertThat(actual.get().getUsername()).isEqualTo(MEMBER_EMAIL);
+        assertThat(actual.get().getEmail()).isEqualTo(MEMBER_EMAIL);
         assertThat(actual.get().getRole()).isNotNull();
-        assertThat(actual.get().getRole().getName()).isEqualTo(RoleName.ROLE_TEAM_MEMBER);
+        assertThat(actual.get().getRole().getName())
+                .isEqualTo(RoleName.ROLE_TEAM_MEMBER);
     }
 
     @Test
@@ -82,11 +93,12 @@ class UserRepositoryTest extends AbstractRepositoryTest {
     @Test
     @DisplayName("Find by email - soft-deleted user - returns empty")
     void findByEmail_SoftDeletedUser_ReturnsEmpty() {
-        User user = userRepository.findByEmail("user-repo-member@gmail.com").orElseThrow();
+        User user = userRepository.findByEmail(MEMBER_EMAIL)
+                .orElseThrow();
 
         userRepository.delete(user);
 
-        Optional<User> actual = userRepository.findByEmail("user-repo-member@gmail.com");
+        Optional<User> actual = userRepository.findByEmail(MEMBER_EMAIL);
 
         assertThat(actual).isEmpty();
     }
@@ -94,16 +106,29 @@ class UserRepositoryTest extends AbstractRepositoryTest {
     @Test
     @DisplayName("Find by id and role name - matching id and role - returns user")
     void findByIdAndRoleName_MatchingIdAndRole_ReturnsUser() {
-        Optional<User> actual = userRepository.findByIdAndRoleName(2L, RoleName.ROLE_PROJECT_MANAGER);
+        User manager = userRepository.findByEmail(MANAGER_EMAIL)
+                .orElseThrow();
+
+        Optional<User> actual = userRepository.findByIdAndRoleName(
+                manager.getId(),
+                RoleName.ROLE_PROJECT_MANAGER
+        );
 
         assertThat(actual).isPresent();
-        assertThat(actual.get().getUsername()).isEqualTo("user-repo-manager@gmail.com");
+        assertThat(actual.get().getUsername()).isEqualTo(MANAGER_EMAIL);
+        assertThat(actual.get().getEmail()).isEqualTo(MANAGER_EMAIL);
     }
 
     @Test
     @DisplayName("Find by id and role name - id exists but role does not match - returns empty")
     void findByIdAndRoleName_MismatchedRole_ReturnsEmpty() {
-        Optional<User> actual = userRepository.findByIdAndRoleName(2L, RoleName.ROLE_TEAM_MEMBER);
+        User manager = userRepository.findByEmail(MANAGER_EMAIL)
+                .orElseThrow();
+
+        Optional<User> actual = userRepository.findByIdAndRoleName(
+                manager.getId(),
+                RoleName.ROLE_TEAM_MEMBER
+        );
 
         assertThat(actual).isEmpty();
     }
@@ -111,7 +136,10 @@ class UserRepositoryTest extends AbstractRepositoryTest {
     @Test
     @DisplayName("Find by id and role name - nonexistent id - returns empty")
     void findByIdAndRoleName_NonexistentId_ReturnsEmpty() {
-        Optional<User> actual = userRepository.findByIdAndRoleName(999L, RoleName.ROLE_ADMIN);
+        Optional<User> actual = userRepository.findByIdAndRoleName(
+                999999L,
+                RoleName.ROLE_ADMIN
+        );
 
         assertThat(actual).isEmpty();
     }

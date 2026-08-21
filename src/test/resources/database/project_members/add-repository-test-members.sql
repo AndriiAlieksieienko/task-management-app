@@ -1,56 +1,44 @@
-INSERT INTO comments (
-    id,
-    task_id,
+INSERT INTO project_members (
+    project_id,
     user_id,
-    text,
-    created_at
+    joined_at
 )
 VALUES (
-    1,
     1,
     (
         SELECT id
         FROM users
         WHERE email = 'user-test-member@gmail.com'
     ),
-    'First comment on task one',
     NOW()
 );
 
-INSERT INTO comments (
-    id,
-    task_id,
+INSERT INTO project_members (
+    project_id,
     user_id,
-    text,
-    created_at
+    joined_at
 )
 VALUES (
-    2,
     1,
     (
         SELECT id
         FROM users
-        WHERE email = 'user-test-member-2@gmail.com'
+        WHERE email = 'user-test-target@gmail.com'
     ),
-    'Second comment on task one',
     NOW()
 );
 
-INSERT INTO comments (
-    id,
-    task_id,
+INSERT INTO project_members (
+    project_id,
     user_id,
-    text,
-    created_at
+    joined_at
 )
 VALUES (
-    3,
     2,
     (
         SELECT id
         FROM users
         WHERE email = 'user-test-member@gmail.com'
     ),
-    'First comment on task two',
     NOW()
 );

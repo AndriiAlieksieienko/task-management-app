@@ -28,16 +28,16 @@ class LabelRepositoryTest extends AbstractRepositoryTest {
     @DisplayName("Save label - valid label - persists and generates id")
     @Sql(
             scripts = {
-                    "classpath:database/users/add-label-repository-users.sql",
-                    "classpath:database/projects/add-label-repository-projects.sql"
+                    "classpath:database/users/insert-user-test-users.sql",
+                    "classpath:database/projects/insert-repository-test-projects.sql"
             },
             executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
     )
     @Sql(
             scripts = {
                     "classpath:database/labels/remove-label-repository-labels.sql",
-                    "classpath:database/projects/remove-label-repository-projects.sql",
-                    "classpath:database/users/remove-label-repository-users.sql"
+                    "classpath:database/projects/remove-repository-test-projects.sql",
+                    "classpath:database/users/remove-user-test-users.sql"
             },
             executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
     )
@@ -60,8 +60,8 @@ class LabelRepositoryTest extends AbstractRepositoryTest {
     @DisplayName("Find all by project id - existing project - returns only its labels")
     @Sql(
             scripts = {
-                    "classpath:database/users/add-label-repository-users.sql",
-                    "classpath:database/projects/add-label-repository-projects.sql",
+                    "classpath:database/users/insert-user-test-users.sql",
+                    "classpath:database/projects/insert-repository-test-projects.sql",
                     "classpath:database/labels/add-label-repository-labels.sql"
             },
             executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
@@ -69,8 +69,8 @@ class LabelRepositoryTest extends AbstractRepositoryTest {
     @Sql(
             scripts = {
                     "classpath:database/labels/remove-label-repository-labels.sql",
-                    "classpath:database/projects/remove-label-repository-projects.sql",
-                    "classpath:database/users/remove-label-repository-users.sql"
+                    "classpath:database/projects/remove-repository-test-projects.sql",
+                    "classpath:database/users/remove-user-test-users.sql"
             },
             executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
     )
@@ -94,8 +94,8 @@ class LabelRepositoryTest extends AbstractRepositoryTest {
     @DisplayName("Find all by project id - nonexistent project - returns empty list")
     @Sql(
             scripts = {
-                    "classpath:database/users/add-label-repository-users.sql",
-                    "classpath:database/projects/add-label-repository-projects.sql",
+                    "classpath:database/users/insert-user-test-users.sql",
+                    "classpath:database/projects/insert-repository-test-projects.sql",
                     "classpath:database/labels/add-label-repository-labels.sql"
             },
             executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
@@ -103,8 +103,8 @@ class LabelRepositoryTest extends AbstractRepositoryTest {
     @Sql(
             scripts = {
                     "classpath:database/labels/remove-label-repository-labels.sql",
-                    "classpath:database/projects/remove-label-repository-projects.sql",
-                    "classpath:database/users/remove-label-repository-users.sql"
+                    "classpath:database/projects/remove-repository-test-projects.sql",
+                    "classpath:database/users/remove-user-test-users.sql"
             },
             executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
     )

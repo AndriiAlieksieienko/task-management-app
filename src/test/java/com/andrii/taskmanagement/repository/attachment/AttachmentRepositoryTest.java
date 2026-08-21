@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class AttachmentRepositoryTest extends AbstractRepositoryTest {
+
     @Autowired
     private AttachmentRepository attachmentRepository;
 
@@ -32,67 +33,80 @@ class AttachmentRepositoryTest extends AbstractRepositoryTest {
     @DisplayName("Save attachment - valid attachment - persists and generates id")
     @Sql(
             scripts = {
-                    "classpath:database/users/add-attachment-repository-users.sql",
-                    "classpath:database/projects/add-attachment-repository-projects.sql",
-                    "classpath:database/tasks/add-attachment-repository-tasks.sql"
+                    "classpath:database/clean-data.sql",
+                    "classpath:database/users/insert-user-test-users.sql",
+                    "classpath:database/projects/insert-repository-test-projects.sql",
+                    "classpath:database/tasks/add-repository-tasks.sql"
             },
             executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
     )
     @Sql(
-            scripts = {
-                    "classpath:database/attachments/remove-attachment-repository-attachments.sql",
-                    "classpath:database/tasks/remove-attachment-repository-tasks.sql",
-                    "classpath:database/projects/remove-attachment-repository-projects.sql",
-                    "classpath:database/users/remove-attachment-repository-users.sql"
-            },
+            scripts = "classpath:database/clean-data.sql",
             executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
     )
     void save_ValidAttachment_PersistsAttachment() {
+
         Attachment attachment = new Attachment();
 
-        attachment.setTask(taskRepository.getReferenceById(1L));
-        attachment.setUploadedBy(userRepository.getReferenceById(2L));
+        attachment.setTask(
+                taskRepository.getReferenceById(1L)
+        );
+
+        attachment.setUploadedBy(
+                userRepository.findByEmail("user-test-member@gmail.com")
+                        .orElseThrow()
+        );
+
         attachment.setDropboxFileId("dropbox-id-new");
         attachment.setFilename("new-file.pdf");
         attachment.setUploadDate(LocalDateTime.now());
 
         Attachment saved = attachmentRepository.save(attachment);
 
-        assertThat(saved.getId()).isNotNull();
-        assertThat(attachmentRepository.findById(saved.getId())).isPresent();
+        assertThat(saved.getId())
+                .isNotNull();
+
+        assertThat(attachmentRepository.findById(saved.getId()))
+                .isPresent();
     }
 
     @Test
     @DisplayName("Find all by task id - existing task - returns only its attachments")
     @Sql(
             scripts = {
-                    "classpath:database/users/add-attachment-repository-users.sql",
-                    "classpath:database/projects/add-attachment-repository-projects.sql",
-                    "classpath:database/tasks/add-attachment-repository-tasks.sql",
+                    "classpath:database/clean-data.sql",
+                    "classpath:database/users/insert-user-test-users.sql",
+                    "classpath:database/projects/insert-repository-test-projects.sql",
+                    "classpath:database/tasks/add-repository-tasks.sql",
                     "classpath:database/attachments/add-attachment-repository-attachments.sql"
             },
             executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
     )
     @Sql(
-            scripts = {
-                    "classpath:database/attachments/remove-attachment-repository-attachments.sql",
-                    "classpath:database/tasks/remove-attachment-repository-tasks.sql",
-                    "classpath:database/projects/remove-attachment-repository-projects.sql",
-                    "classpath:database/users/remove-attachment-repository-users.sql"
-            },
+            scripts = "classpath:database/clean-data.sql",
             executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
     )
     void findAllByTaskId_ExistingTaskId_ReturnsAttachmentsForThatTask() {
-        List<Attachment> taskOneAttachments = attachmentRepository.findAllByTaskId(1L);
 
-        assertThat(taskOneAttachments).hasSize(2);
+        List<Attachment> taskOneAttachments =
+                attachmentRepository.findAllByTaskId(1L);
+
+        assertThat(taskOneAttachments)
+                .hasSize(2);
+
         assertThat(taskOneAttachments)
                 .extracting(Attachment::getFilename)
-                .containsExactlyInAnyOrder("design.pdf", "notes.txt");
+                .containsExactlyInAnyOrder(
+                        "design.pdf",
+                        "notes.txt"
+                );
 
-        List<Attachment> taskTwoAttachments = attachmentRepository.findAllByTaskId(2L);
+        List<Attachment> taskTwoAttachments =
+                attachmentRepository.findAllByTaskId(2L);
 
-        assertThat(taskTwoAttachments).hasSize(1);
+        assertThat(taskTwoAttachments)
+                .hasSize(1);
+
         assertThat(taskTwoAttachments)
                 .extracting(Attachment::getFilename)
                 .containsExactly("screenshot.png");
@@ -102,25 +116,24 @@ class AttachmentRepositoryTest extends AbstractRepositoryTest {
     @DisplayName("Find all by task id - nonexistent task - returns empty list")
     @Sql(
             scripts = {
-                    "classpath:database/users/add-attachment-repository-users.sql",
-                    "classpath:database/projects/add-attachment-repository-projects.sql",
-                    "classpath:database/tasks/add-attachment-repository-tasks.sql",
+                    "classpath:database/clean-data.sql",
+                    "classpath:database/users/insert-user-test-users.sql",
+                    "classpath:database/projects/insert-repository-test-projects.sql",
+                    "classpath:database/tasks/add-repository-tasks.sql",
                     "classpath:database/attachments/add-attachment-repository-attachments.sql"
             },
             executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
     )
     @Sql(
-            scripts = {
-                    "classpath:database/attachments/remove-attachment-repository-attachments.sql",
-                    "classpath:database/tasks/remove-attachment-repository-tasks.sql",
-                    "classpath:database/projects/remove-attachment-repository-projects.sql",
-                    "classpath:database/users/remove-attachment-repository-users.sql"
-            },
+            scripts = "classpath:database/clean-data.sql",
             executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
     )
     void findAllByTaskId_NonexistentTaskId_ReturnsEmptyList() {
-        List<Attachment> actual = attachmentRepository.findAllByTaskId(999L);
 
-        assertThat(actual).isEmpty();
+        List<Attachment> actual =
+                attachmentRepository.findAllByTaskId(999L);
+
+        assertThat(actual)
+                .isEmpty();
     }
 }

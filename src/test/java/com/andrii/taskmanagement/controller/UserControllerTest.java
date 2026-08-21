@@ -38,6 +38,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
         scripts = "classpath:database/users/insert-user-test-users.sql",
         executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD
 )
+@Sql(
+        scripts = "classpath:database/users/remove-user-test-users.sql",
+        executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
+)
 class UserControllerTest {
     @Container
     @ServiceConnection
