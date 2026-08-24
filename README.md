@@ -288,17 +288,18 @@ Many-to-many join table with composite primary key `(task_id, label_id)`.
 ```mermaid
 erDiagram
     USER ||--o{ PROJECT : owns
-    USER }o--o{ PROJECT_MEMBER : joins
+    USER ||--o{ PROJECT_MEMBER : joins
     PROJECT ||--o{ PROJECT_MEMBER : has
     PROJECT ||--o{ TASK : contains
     PROJECT ||--o{ LABEL : defines
-    USER ||--o{ TASK : "assigned to"
+    USER ||--o{ TASK : assigned_to
     TASK ||--o{ COMMENT : has
     USER ||--o{ COMMENT : writes
     TASK ||--o{ ATTACHMENT : has
     USER ||--o{ ATTACHMENT : uploads
-    TASK }o--o{ LABEL : tagged_with
-    USER }o--|| ROLE : has
+    TASK ||--o{ TASK_LABEL : tagged_with
+    LABEL ||--o{ TASK_LABEL : applied_to
+    ROLE ||--o{ USER : has
 ```
 
 ---
